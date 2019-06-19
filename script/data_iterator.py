@@ -1,6 +1,6 @@
 import numpy
 import json
-import cPickle as pkl
+import pickle
 import random
 import numpy as np
 
@@ -18,7 +18,7 @@ class DataIterator:
         self.source = open(source, 'r')
         #self
         self.source_dicts = []
-        
+
         self.batch_size = batch_size
         self.maxlen = maxlen
         self.minlen = minlen
@@ -30,7 +30,7 @@ class DataIterator:
         self.source_buffer = []
         #self.k = batch_size * max_batch_size
         self.k = batch_size
-        
+
         self.end_of_data = False
 
     def __iter__(self):
@@ -49,10 +49,10 @@ class DataIterator:
         target = []
         hist_item_list = []
         hist_cate_list = []
-     
+
         neg_item_list = []
         neg_cate_list = []
-        
+
         if len(self.source_buffer) == 0:
             for k_ in xrange(self.k):
                 ss = self.source.readline()
@@ -81,18 +81,18 @@ class DataIterator:
 
                 hist_item = map(int, ss[4].split(","))
                 hist_cate = map(int, ss[5].split(","))
-                
+
                 neg_item = map(int, ss[6].split(","))
                 neg_cate = map(int, ss[7].split(","))
-                
+
                 source.append([uid, item_id, cate_id])
                 target.append([label, 1-label])
                 hist_item_list.append(hist_item[-self.maxlen:])
                 hist_cate_list.append(hist_cate[-self.maxlen:])
-                
+
                 neg_item_list.append(neg_item[-self.maxlen:])
                 neg_cate_list.append(neg_cate[-self.maxlen:])
-                
+
 
                 if len(source) >= self.batch_size or len(target) >= self.batch_size:
                     break
@@ -102,23 +102,23 @@ class DataIterator:
         # all sentence pairs in maxibatch filtered out because of length
         if len(source) == 0 or len(target) == 0:
             source, target = self.next()
-        
+
         uid_array = np.array(source)[:,0]
         item_array = np.array(source)[:,1]
         cate_array = np.array(source)[:,2]
 
         target_array = np.array(target)
 
-        history_item_array = np.array(hist_item_list)        
+        history_item_array = np.array(hist_item_list)
         history_cate_array = np.array(hist_cate_list)
-        
-        history_neg_item_array = np.array(neg_item_list)        
-        history_neg_cate_array = np.array(neg_cate_list)        
-        
-        history_mask_array = np.greater(history_item_array, 0)*1.0      
 
-        
-        
+        history_neg_item_array = np.array(neg_item_list)
+        history_neg_cate_array = np.array(neg_cate_list)
+
+        history_mask_array = np.greater(history_item_array, 0)*1.0
+
+
+
         return (uid_array, item_array, cate_array), (target_array, history_item_array, history_cate_array, history_neg_item_array, history_neg_cate_array, history_mask_array)
 
 

@@ -42,8 +42,11 @@ from tensorflow.python.util import nest
 
 # pylint: disable=protected-access
 _concat = rnn_cell_impl._concat
-_like_rnncell = rnn_cell_impl._like_rnncell
-# pylint: enable=protected-access
+#_like_rnncell = rnn_cell_impl._like_rnncell
+
+def _like_rnncell(cell):
+    conditions = [hasattr(cell, "output_size"), hasattr(cell, "state_size"), hasattr(cell, "zero_state"), callable(cell)]
+    return all(conditions)
 
 
 def _transpose_batch_time(x):
@@ -777,7 +780,7 @@ def _dynamic_rnn_loop(cell,
     else:
         return (time + 1, output_ta_t, new_state)
 
-  if att_scores is not None:  
+  if att_scores is not None:
       _, output_final_ta, final_state, _ = control_flow_ops.while_loop(
           cond=lambda time, *_: time < time_steps,
           body=_time_step,

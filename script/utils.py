@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.ops.rnn_cell import *
-from tensorflow.python.ops.rnn_cell_impl import  _Linear
+#from tensorflow.python.ops.rnn_cell_impl import  _Linear
+from tensorflow.contrib.rnn.python.ops.rnn_cell import _Linear
 from tensorflow import keras
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import init_ops
@@ -50,10 +51,10 @@ def din_attention(query, facts, attention_size, mask=None, stag='null', mode='SU
         scores = tf.reshape(scores, [-1, tf.shape(facts)[1]])
         output = facts * tf.expand_dims(scores, -1)
         output = tf.reshape(output, tf.shape(facts))
-    
+
     if return_alphas:
         return output, scores
-        
+
     return output
 
 
@@ -189,10 +190,10 @@ def calc_gauc(raw_arr, nick_index):
                 gauc += auc_val * len(input_arr)
                 pv_sum += len(input_arr)
             else:
-                pv_sum += len(input_arr) 
+                pv_sum += len(input_arr)
             last_index = idx
     return gauc / pv_sum
-                
+
 
 
 

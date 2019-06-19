@@ -9,7 +9,7 @@ import sys
 from utils import *
 import multiprocessing
 import argparse
-import cPickle as pkl
+import pickle
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', type=str, default='train', help='train | test')
@@ -59,14 +59,14 @@ def generator_queue(generator, max_q_size=20,
     return q, _stop, generator_threads
 
 EMBEDDING_DIM = 16
-HIDDEN_SIZE = 16 * 2 
+HIDDEN_SIZE = 16 * 2
 best_auc = 0.0
 
 def prepare_data(src, target):
     nick_id, item_id, cate_id = src
     label, hist_item, hist_cate, neg_item, neg_cate, hist_mask = target
     return nick_id, item_id, cate_id, label, hist_item, hist_cate, neg_item, neg_cate, hist_mask
-    
+
 def eval(sess, test_data, model, model_path, batch_size):
     loss_sum = 0.
     accuracy_sum = 0.
@@ -78,7 +78,7 @@ def eval(sess, test_data, model, model_path, batch_size):
         if  _stop.is_set() and test_data_pool.empty():
             break
         src,tgt = test_data_pool.get()
-        nick_id, item_id, cate_id, label, hist_item, hist_cate, neg_item, neg_cate, hist_mask = prepare_data(src, tgt) 
+        nick_id, item_id, cate_id, label, hist_item, hist_cate, neg_item, neg_cate, hist_mask = prepare_data(src, tgt)
         if len(nick_id) < batch_size:
             continue
         nums += 1
@@ -91,7 +91,7 @@ def eval(sess, test_data, model, model_path, batch_size):
         target_1 = target[:, 0].tolist()
         for p ,t in zip(prob_1, target_1):
             stored_arr.append([p, t])
-    
+
     test_auc = calc_auc(stored_arr)
     accuracy_sum = accuracy_sum / nums
     loss_sum = loss_sum / nums
@@ -112,7 +112,7 @@ def train(
         save_iter = 100,
         model_type = 'DNN',
         Memory_Size = 4,
-        Mem_Induction = 0, 
+        Mem_Induction = 0,
         Util_Reg = 0
 ):
     if model_type != "MIMN" or model_type != "MIMN_with_aux":
@@ -124,39 +124,39 @@ def train(
     gpu_options = tf.GPUOptions(allow_growth=True)
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
-        
+
         train_data = DataIterator(train_file, batch_size, maxlen)
-        test_data = DataIterator(test_file, batch_size, maxlen)    
-        
-        feature_num = pkl.load(open(feature_file))
+        test_data = DataIterator(test_file, batch_size, maxlen)
+
+        feature_num = pickle.load(open(feature_file, 'rb'))
         n_uid, n_mid = feature_num, feature_num
         BATCH_SIZE = batch_size
         SEQ_LEN = maxlen
 
-        if model_type == 'DNN': 
+        if model_type == 'DNN':
             model = Model_DNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'PNN': 
+        elif model_type == 'PNN':
             model = Model_PNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'GRU4REC': 
+        elif model_type == 'GRU4REC':
             model = Model_GRU4REC(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'DIN': 
+        elif model_type == 'DIN':
             model = Model_DIN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'ARNN': 
+        elif model_type == 'ARNN':
             model = Model_ARNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
         elif model_type == 'RUM' :
             model = Model_RUM(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN)
-        elif model_type == 'DIEN': 
+        elif model_type == 'DIEN':
             model = Model_DIEN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'DIEN_with_aux': 
+        elif model_type == 'DIEN_with_aux':
             model = Model_DIEN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN, use_negsample=True)
         elif model_type == 'MIMN':
-            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, mask_flag=True) 
+            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, mask_flag=True)
         elif model_type == 'MIMN_with_aux':
-            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, use_negsample=True, mask_flag=True) 
+            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, use_negsample=True, mask_flag=True)
         else:
             print ("Invalid model_type : %s", model_type)
             return
-        
+
         sess.run(tf.global_variables_initializer())
         sess.run(tf.local_variables_initializer())
 
@@ -209,10 +209,10 @@ def test(
         save_iter = 100,
         model_type = 'DNN',
         Memory_Size = 4,
-        Mem_Induction = 0, 
+        Mem_Induction = 0,
         Util_Reg = 0
 ):
-    
+
     if model_type != "MIMN" or model_type != "MIMN_with_aux":
         model_path = "dnn_best_model/book_ckpt_noshuff" + model_type
     else:
@@ -222,32 +222,32 @@ def test(
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         test_data = DataIterator(test_file, batch_size, maxlen)
-        feature_num = pkl.load(open(feature_file))
+        feature_num = pickle.load(open(feature_file))
         n_uid, n_mid = feature_num, feature_num
         BATCH_SIZE = batch_size
         SEQ_LEN = maxlen
 
 
-        if model_type == 'DNN': 
+        if model_type == 'DNN':
             model = Model_DNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'PNN': 
+        elif model_type == 'PNN':
             model = Model_PNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'GRU4REC': 
+        elif model_type == 'GRU4REC':
             model = Model_GRU4REC(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'DIN': 
+        elif model_type == 'DIN':
             model = Model_DIN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'ARNN': 
+        elif model_type == 'ARNN':
             model = Model_ARNN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
         elif model_type == 'RUM' :
             model = Model_RUM(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE,  Memory_Size, SEQ_LEN)
-        elif model_type == 'DIEN': 
+        elif model_type == 'DIEN':
             model = Model_DIEN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN)
-        elif model_type == 'DIEN_with_aux': 
+        elif model_type == 'DIEN_with_aux':
             model = Model_DIEN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, SEQ_LEN, use_negsample=True)
         elif model_type == 'MIMN':
-            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, mask_flag=True) 
+            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, mask_flag=True)
         elif model_type == 'MIMN_with_aux':
-            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, use_negsample=True, mask_flag=True) 
+            model = Model_MIMN(n_uid, n_mid, EMBEDDING_DIM, HIDDEN_SIZE, BATCH_SIZE, Memory_Size, SEQ_LEN, Mem_Induction, Util_Reg, use_negsample=True, mask_flag=True)
         else:
             print ("Invalid model_type : %s", model_type)
             return
@@ -256,7 +256,7 @@ def test(
         print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f' % eval(sess, test_data, model, model_path, batch_size))
 
 if __name__ == '__main__':
-    print sys.argv
+    print(sys.argv)
     args = parser.parse_args()
     SEED = args.random_seed
     Model_Type = args.model_type
