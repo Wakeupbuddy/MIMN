@@ -1,4 +1,4 @@
-import cPickle as pkl
+import pickle
 import pandas as pd
 import random
 import numpy as np
@@ -9,7 +9,7 @@ Test_File = "./data/taobao_data/taobao_test.txt"
 Train_File = "./data/taobao_data/taobao_train.txt"
 Train_handle = open(Train_File, 'w')
 Test_handle = open(Test_File, 'w')
-Feature_handle = open("./data/taobao_data/taobao_feature.pkl",'w')
+Feature_handle = open("./data/taobao_data/taobao_feature.pkl",'wb')
 
 MAX_LEN_ITEM = 200
 
@@ -57,7 +57,7 @@ def gen_dataset(user_df, item_df, item_cnt, feature_size, dataset_pkl):
 
     # get each user's last touch point time
 
-    print len(user_df)
+    print(len(user_df))
 
     user_last_touch_time = []
     for uid, hist in user_df:
@@ -105,7 +105,7 @@ def gen_dataset(user_df, item_df, item_cnt, feature_size, dataset_pkl):
             item_part_pad =  [[0] * 4] * (MAX_LEN_ITEM - len(item_part)) + item_part
         else:
             item_part_pad = item_part[len(item_part) - MAX_LEN_ITEM:len(item_part)]
-        
+
         # gen sample
         # sample = (label, item_part_pad, item_part_len, user_part_pad, user_part_len)
 
@@ -128,14 +128,16 @@ def gen_dataset(user_df, item_df, item_cnt, feature_size, dataset_pkl):
                 cat_list.append(item_part_pad[i][2])
             train_sample_list.append(str(uid) + "\t" + str(target_item) + "\t" + str(target_item_cate) + "\t" + str(label) + "\t" + ",".join(map(str, item_list)) + "\t" +",".join(map(str, cat_list))+"\n")
 
-    train_sample_length_quant = len(train_sample_list)/256*256
-    test_sample_length_quant = len(test_sample_list)/256*256
-        
-    print "length",len(train_sample_list)
+    train_sample_length_quant = int(len(train_sample_list)/256*256)
+    test_sample_length_quant = int(len(test_sample_list)/256*256)
+
+    print("length: ")
+    print(len(train_sample_list))
     train_sample_list = train_sample_list[:train_sample_length_quant]
     test_sample_list = test_sample_list[:test_sample_length_quant]
     random.shuffle(train_sample_list)
-    print "length",len(train_sample_list)
+    print("length:")
+    print(len(train_sample_list))
     return train_sample_list, test_sample_list
 
 
@@ -148,33 +150,33 @@ def produce_neg_item_hist_with_cate(train_file, test_file):
         item_hist_list = units[4].split(",")
         cate_hist_list = units[5].split(",")
         hist_list = zip(item_hist_list, cate_hist_list)
-        hist_seq = len(hist_list)
+        hist_seq = len(list(zip(item_hist_list, cate_hist_list)))
         sample_count += 1
         for item in hist_list:
             item_dict.setdefault(str(item),0)
-            
+
     for line in test_file:
         units = line.strip().split("\t")
         item_hist_list = units[4].split(",")
         cate_hist_list = units[5].split(",")
         hist_list = zip(item_hist_list, cate_hist_list)
-        hist_seq = len(hist_list)
+        hist_seq = len(list(zip(item_hist_list, cate_hist_list)))
         sample_count += 1
         for item in hist_list:
             item_dict.setdefault(str(item),0)
-            
-  
+
+
     del(item_dict["('0', '0')"])
-    neg_array = np.random.choice(np.array(item_dict.keys()), (sample_count, hist_seq+20))
+    neg_array = np.random.choice(np.array(list(item_dict.keys())), (sample_count, hist_seq+20))
     neg_list = neg_array.tolist()
     sample_count = 0
-    
+
     for line in train_file:
         units = line.strip().split("\t")
         item_hist_list = units[4].split(",")
         cate_hist_list = units[5].split(",")
         hist_list = zip(item_hist_list, cate_hist_list)
-        hist_seq = len(hist_list)
+        hist_seq = len(list(zip(item_hist_list, cate_hist_list)))
         neg_hist_list = []
         for item in neg_list[sample_count]:
             item = eval(item)
@@ -185,13 +187,13 @@ def produce_neg_item_hist_with_cate(train_file, test_file):
         sample_count += 1
         neg_item_list, neg_cate_list = zip(*neg_hist_list)
         Train_handle.write(line.strip() + "\t" + ",".join(neg_item_list) + "\t" + ",".join(neg_cate_list) + "\n" )
-        
+
     for line in test_file:
         units = line.strip().split("\t")
         item_hist_list = units[4].split(",")
         cate_hist_list = units[5].split(",")
         hist_list = zip(item_hist_list, cate_hist_list)
-        hist_seq = len(hist_list)
+        hist_seq = len(list(zip(item_hist_list, cate_hist_list)))
         neg_hist_list = []
         for item in neg_list[sample_count]:
             item = eval(item)
@@ -206,9 +208,11 @@ def produce_neg_item_hist_with_cate(train_file, test_file):
 def main():
     df = to_df(RAW_DATA_FILE)
     df, item_cnt, feature_size = remap(df)
-    print "feature_size", item_cnt, feature_size
+    print("feature_size")
+    print(item_cnt)
+    print(feature_size)
     feature_total_num = feature_size + 1
-    pkl.dump(feature_total_num, Feature_handle)
+    pickle.dump(feature_total_num, Feature_handle)
 
     user_df, item_df = gen_user_item_group(df, item_cnt, feature_size)
     train_sample_list, test_sample_list = gen_dataset(user_df, item_df, item_cnt, feature_size, DATASET_PKL)
