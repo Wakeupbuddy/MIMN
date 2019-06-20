@@ -39,7 +39,7 @@ class DataIterator:
     def reset(self):
         self.source.seek(0)
 
-    def next(self):
+    def __next__(self):
         if self.end_of_data:
             self.end_of_data = False
             self.reset()
@@ -54,7 +54,7 @@ class DataIterator:
         neg_cate_list = []
 
         if len(self.source_buffer) == 0:
-            for k_ in xrange(self.k):
+            for k_ in range(self.k):
                 ss = self.source.readline()
                 if ss == "":
                     break
@@ -79,11 +79,11 @@ class DataIterator:
                 cate_id = int(ss[2])
                 label = int(ss[3])
 
-                hist_item = map(int, ss[4].split(","))
-                hist_cate = map(int, ss[5].split(","))
+                hist_item = list(map(int, ss[4].split(",")))
+                hist_cate = list(map(int, ss[5].split(",")))
 
-                neg_item = map(int, ss[6].split(","))
-                neg_cate = map(int, ss[7].split(","))
+                neg_item = list(map(int, ss[6].split(",")))
+                neg_cate = list(map(int, ss[7].split(",")))
 
                 source.append([uid, item_id, cate_id])
                 target.append([label, 1-label])
